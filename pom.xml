@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.badprogrammer</groupId>
+  <artifactId>timing-utils</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+
+  <name>timing-utils</name>
+  <description>
+    A focused, light weight, minimal-external-dependency Java library for measuring method execution time for deliberate
+    performance investigations and permanent production logging.
+  </description>
+  <url>https://github.com/dev-badprogrammer/timing-utils</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>kumar-github</id>
+      <name>Saravana Kumar M</name>
+      <email>saravana-kumar-m@badprogrammer.dev</email>
+      <organization>Bad Programmer</organization>
+      <organizationUrl>www.badprogrammer.dev</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/dev-badprogrammer/timing-utils.git</connection>
+    <developerConnection>scm:git:https://github.com/dev-badprogrammer/timing-utils.git</developerConnection>
+    <url>https://github.com/dev-badprogrammer/timing-utils</url>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+  </properties>
+
+</project>
