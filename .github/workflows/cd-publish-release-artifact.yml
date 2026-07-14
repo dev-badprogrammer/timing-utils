@@ -1,0 +1,92 @@
+# Publishes release versions to Maven Central when a version tag (vX.Y.Z) is pushed.
+
+# The job pauses for manual approval in the production environment, then builds, signs with GPG, and publishes the
+# artifact using the `central-publishing-maven-plugin`.
+# Prevents publishing of SNAPSHOT versions and requires proper GPG and Central credentials.
+
+# Triggers on version tags (vX.Y.Z) to publish release artifacts to Maven Central. Waits for manual approval in
+# production, verifies the version is not a SNAPSHOT, signs with GPG, and publishes via the release profile.
+
+# Workflow name — user defined - can be any descriptive name.
+name: Publish Release
+
+# Runs on every tag push that matches the pattern (v0.1.0, v1.0.0, v2.13.4).
+# Patterns that do not match (v0.1.0-SNAPSHOT, v0.1, or 0.1.0).
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+
+  # Job ID - user defined — can be any descriptive name.
+  publish-release-artifact:
+    name: Publish Release Artifact To Maven Central
+    runs-on: ubuntu-latest
+
+    # Links this job to the 'production' GitHub environment for deployment tracking.
+    # Pauses here for manual approval
+    environment: production
+
+    # Explicit permissions required.
+    permissions:
+
+      # Allows the workflow to read repository source code, configuration files, etc. for analysis.
+      contents: read
+
+    steps:
+
+      # Step-1 - Checkout the repository.
+      - name: Checkout Repository
+
+        # Use actions/checkout GitHub Action to clone the repository into the runner workspace (GITHUB_WORKSPACE).
+        uses: actions/checkout@v7
+
+      # Step-2 - Setup JDK.
+      - name: Setup JDK 21
+
+        # Use actions/setup-java GitHub Action to install and configure the specified JDK in the runner.
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          # matches `publishingServerId` in the release profile's `central-publishing-maven-plugin` config
+
+      # Step-3 - Import the GPG key.
+      - name: Import GPG Key
+
+        # SonarQube will flag the below action as a security risk and fail the analysis.
+        # Reason: External GitHub Actions and workflows should be pinned to a commit hash 'githubactions:S7637'.
+        # So we have to either suppress S7637 as Won't Fix/False Positive in SonarQube or use the full commit hash.
+
+        # Use crazy-max/ghaction-import-gpg GitHub Action to import the GPG private key into the runner's keyring for
+        # artifact signing.
+        # v7.0.0
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      # Step-4 - Verify the version is not a SNAPSHOT.
+      - name: Verify the version is release (not SNAPSHOT)
+        run: |
+          VERSION=$(mvn help:evaluate \
+            -Dexpression=project.version -q -DforceStdout)
+          echo "Releasing version: $VERSION"
+          if [[ $VERSION == *-SNAPSHOT ]]; then
+            echo "ERROR: Cannot release a SNAPSHOT version"
+            exit 1
+          fi
+
+      # Step-5 - Build & Publish to Maven Central.
+      - name: Build & Publish to Maven Central
+        run: mvn deploy -Prelease
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          # maven-gpg-plugin 3.1.0+ auto-reads MAVEN_GPG_PASSPHRASE when `--pinentry-mode` is set `loopback`

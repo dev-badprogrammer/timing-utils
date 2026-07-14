@@ -1,0 +1,97 @@
+# Runs Checkstyle (fail-fast on violations), compiles the code, executes the tests, and enforces (≥ 80%) coverage via
+# JaCoCo, followed by SonarQube Cloud analysis with a blocking Quality Gate check.
+
+# Note: This job should be added as a required check under "Require status checks to pass" in the branch protection
+# rule for main, preventing PR merges if Checkstyle, tests, coverage, or the SonarQube Cloud Quality Gate fail.
+# This enforces code quality and test coverage on every PR.
+
+# Workflow name — user defined - can be any descriptive name.
+name: CI
+
+# Runs on every push to main and PRs targeting main.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+
+  # Job ID - user defined — can be any descriptive name.
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    # Links this job to the 'ci' GitHub environment for deployment tracking.
+    environment: ci
+
+    steps:
+
+      # Step-1 - Checkout the repository.
+      - name: Checkout Repository
+
+        # Use actions/checkout GitHub Action to clone the repository into the runner workspace (GITHUB_WORKSPACE).
+        uses: actions/checkout@v7
+        with:
+
+          # Disables shallow cloning and fetches full commit history for proper analysis by SonarQube Cloud.
+          fetch-depth: 0
+
+      # Step-2 - Setup JDK.
+      - name: Setup JDK 21
+
+        # Use actions/setup-java GitHub Action to install and configure the specified JDK in the runner.
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # Step-3 - Cache SonarQube packages and downloaded dependencies.
+      - name: Cache SonarQube Packages
+
+        # Use actions/cache GitHub Action to cache and restore dependencies across workflow runs, speeding up builds.
+        uses: actions/cache@v6
+        with:
+          path: ~/.sonar/cache
+
+          # The unique identifier for storing the cache. When the job runs, GitHub looks for an exact match of this key
+          # in the cache store. If found, it restores it. If not found, the job runs without a cache and saves a new
+          # cache under this key at the end.
+          # Cache key scoped to OS - SonarQube Cloud scanner binaries are OS-specific but not project-specific.
+          key: ${{ runner.os }}-sonar
+
+          # A fallback key. If the exact key isn't found, GitHub tries to find a cache that starts with any of these
+          # prefixes and restores the most recent match. Useful when the exact key misses but a partially relevant
+          # cache exists.
+          # Note: Here the fallback is the same as the primary key, and this is fine for SonarQube Cloud since its cache
+          # content doesn't change based on our code — it caches scanner binaries and rule definitions which are
+          # OS-specific but not project-specific. So a simple OS-based key is enough.
+          restore-keys: ${{ runner.os }}-sonar
+
+      # Step-4 - Run checkstyle, build, test, java sources jar, jar docs jar and jacoco coverage.
+      - name: Checkstyle, Build, Test & Coverage
+
+        # Build FAILS immediately on any Checkstyle violation - will not proceed to compile.
+        # Order: checkstyle check (validate, fails fast) → compile → test → Java sources jar + Javadocs jar (package)
+        # → jacoco check ≥ 80% (verify).
+        # Sources jar and Javadocs jar are part of the default build (not release profile) - so any Javadoc warnings or
+        # source generation issues are caught here itself.
+        # Batch mode disables interactive prompts, such as "Are you sure you want to overwrite?"
+        run: mvn -B verify
+
+      # Step-5 - SonarQube Cloud analysis.
+      - name: SonarQube Cloud Analysis
+        env:
+
+          # Auto-provided by GitHub Actions. Allows SonarQube Cloud to post analysis results as PR decorations.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # User-provided. Allows the Maven plugin to upload analysis results to the SonarQube Cloud project.
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+          # qualitygate.wait=true makes this step fail if the Quality Gate fails — since this job is a required status
+          # check, a failed quality gate prevents PR merge.
+        run: |
+          mvn sonar:sonar -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=300

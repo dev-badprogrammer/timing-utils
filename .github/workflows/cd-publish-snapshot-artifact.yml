@@ -1,0 +1,91 @@
+# Publishes artifacts with SNAPSHOT version to GitHub Packages on every push to main.
+
+# Performs a version check on the artifact and deploys only if the artifact version ends with -SNAPSHOT, skipping
+# otherwise.
+# Uses the GITHUB_TOKEN (packages:write) for authentication against the GitHub Packages registry and uploads without
+# GPG signing.
+
+# Workflow name — user defined - can be any descriptive name.
+name: Publish Snapshot
+
+# Runs on every push to main.
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  # Job ID - user defined — can be any descriptive name.
+  publish-snapshot-artifact:
+    name: Publish SNAPSHOT Artifact To GitHub Packages
+    runs-on: ubuntu-latest
+
+    # Links this job to the 'staging' GitHub environment for deployment tracking.
+    environment: staging
+
+    # Explicit permissions required.
+    permissions:
+
+      # Allows the workflow to read repository source code, configuration files, etc. for analysis.
+      contents: read
+
+      # Allows the workflow to upload/publish artifacts to GitHub Packages.
+      packages: write
+
+    steps:
+
+      # Step-1 - Checkout the repository.
+      - name: Checkout Repository
+
+        # Use actions/checkout GitHub Action to clone the repository into the runner workspace (GITHUB_WORKSPACE).
+        uses: actions/checkout@v7
+
+      # Step-2 - Setup JDK.
+      - name: Setup JDK 21
+
+        # Use actions/setup-java GitHub Action to install and configure the specified JDK in the runner.
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+          # Matches distributionManagement → snapshotRepository → id in pom.xml
+          # Generates settings.xml with credentials username=${env.GITHUB_ACTOR}, password=${env.GITHUB_TOKEN}
+          server-id: github
+
+      # Step-3 - Check if the artifact version is SNAPSHOT.
+      - name: Check If The Artifact Version Is SNAPSHOT
+        id: snapshot-version-check
+
+        # The 'evaluate' goal from the 'help' maven plugin evaluates any Maven expression (like ${project.version}) and
+        # prints the result on the console.
+        # The -q (quiet mode) suppresses the unnecessary log output and returns only the actual value (0.1.0-SNAPSHOT).
+        # The -DforceStdout forces the output to be printed on the console.
+        # The output is stored in the 'VERSION' variable and checked if it contains '-SNAPSHOT'. If it does, then set
+        # the 'is_snapshot_version' output parameter to 'true'.
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Current version: $VERSION"
+          if [[ $VERSION == *-SNAPSHOT ]]; then
+            echo "is_snapshot_version=true" >> $GITHUB_OUTPUT
+          else
+            echo "🔴 Not a SNAPSHOT version ($VERSION) — skipping deploy"
+          fi
+
+      # Step-4 - Publish only if the artifact version is SNAPSHOT else skip.
+      - name: Publish SNAPSHOT Artifact
+        if: steps.snapshot-version-check.outputs.is_snapshot_version == 'true'
+
+        # Based on the distributionManagement → snapshotRepository → id in the pom.xml, Maven knows SNAPSHOT versions
+        # should go to GitHub Packages. The 'Setup JDK 21' step above generated a settings.xml with the GitHub
+        # credentials matching 'server-id: github'. Since the target is implicitly defined in pom.xml,
+        # 'mvn deploy -DskipTests' pushes the artifact to GitHub Packages.
+        # plain deploy — no -Prelease, no GPG, no Central Portal involved
+        run: mvn deploy -DskipTests
+        env:
+
+          # Auto-provided by GitHub Actions. Allows Maven to upload the SNAPSHOT artifact to GitHub Packages.
+          # The 'server-id: github' in the 'Setup JDK 21' step configures Maven's settings.xml to use this token as
+          # the password for the github server ID.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

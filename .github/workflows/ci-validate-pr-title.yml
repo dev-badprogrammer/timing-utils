@@ -1,0 +1,53 @@
+# Checks that every PR title follows the Conventional Commits format with an allowed type prefix.
+
+# Each PR title is verified against a list of allowed semantic commit types (feat, fix, chore, etc.). This improves
+# readability, enforces consistent formatting, keeps the commit history clean and helps with release automation.
+
+# Note: This job should be added as a required check under "Require status checks to pass" in the branch protection
+# rule for main, preventing PR merges with titles that don't follow Conventional Commits.
+# This enforces a clean, readable commit history on `main`, since squash merge uses the PR title as the commit message.
+
+# Workflow name — user defined - can be any descriptive name.
+name: PR Title Check
+
+# Runs on every PR.
+on:
+  pull_request:
+    types: [ opened, edited, synchronize, reopened ]
+
+jobs:
+
+  # Job ID - user defined — can be any descriptive name.
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    steps:
+
+      # Step-1 - Validate the PR title against allowed semantic commit types.
+      - name: Validate PR Title Against Conventional Commits
+
+        # SonarQube will flag the below action as a security risk and fail the analysis.
+        # Reason: External GitHub Actions and workflows should be pinned to a commit hash 'githubactions:S7637'.
+        # So we have to either suppress S7637 as Won't Fix/False Positive in SonarQube or use the full commit hash.
+
+        # Use amannn/action-semantic-pull-request GitHub Action to validate PR titles against Conventional Commit rules.
+        # v6.1.1
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50
+        env:
+
+          # Auto-provided by GitHub Actions. Allows the action to access PR metadata like title etc. via GitHub API.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+
+          # Allowed Conventional Commits types for PR title validation.
+          types: |
+            feat
+            fix
+            chore
+            docs
+            test
+            refactor
+            perf
+            ci
+            build
+            revert
