@@ -44,6 +44,260 @@
 
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
+
+    <checkstyle.version>13.8.0</checkstyle.version>
+    <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
+    <checkstyle.config.location>src/main/resources/checkstyle.xml</checkstyle.config.location>
+
+    <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+
+    <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+
+    <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
+    <jacoco-code-coverage.minimum>0.80</jacoco-code-coverage.minimum>
+
+    <sonar-scanner-plugin.version>5.7.0.6970</sonar-scanner-plugin.version>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.organization>dev-badprogrammer</sonar.organization>
+    <sonar.projectKey>dev-badprogrammer_timing-utils</sonar.projectKey>
+
+    <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+
+    <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
+
+    <github-snapshot-repo.url>https://maven.pkg.github.com/dev-badprogrammer/timing-utils</github-snapshot-repo.url>
   </properties>
+
+  <build>
+    <plugins>
+
+      <!-- Ensures code quality by enforcing coding standards and detecting style violations. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${checkstyle-plugin.version}</version>
+        <configuration>
+          <configLocation>${checkstyle.config.location}</configLocation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <violationSeverity>warning</violationSeverity>
+          <logViolationsToConsole>true</logViolationsToConsole>
+          <logViolationCountToConsole>true</logViolationCountToConsole>
+          <failOnViolation>true</failOnViolation>
+        </configuration>
+        <dependencies>
+          <!-- Without this dependency here, the plugin may refer to a different version (older) of checkstyle. -->
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>checkstyle-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <!--
+              check goal defaults to verify, but we explicitly bind it to validate which runs before the compile phase.
+              We don't want to wait till the compilation completes to catch a style issue. This is a common fail-fast
+              pattern and a reasonable trade-off to get faster feedback.
+            -->
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Generates a JAR containing the project's source code for IDE debugging and Maven Central requirements.-->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>${maven-source-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>generate-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Generates a JAR containing API documentation for Maven Central publication and developer reference. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${maven-javadoc-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>generate-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <failOnWarnings>true</failOnWarnings>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Generates a code coverage report based on the results of the test executions. -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco-plugin.version}</version>
+        <executions>
+
+          <!-- Registers the JaCoCo Java agent -->
+          <execution>
+            <id>jacoco-prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <!-- before test execution (test phase) -->
+            <phase>initialize</phase>
+          </execution>
+
+          <!-- Reads jacoco.exec and generates reports -->
+          <execution>
+            <id>jacoco-report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <!-- after test execution (test, post-integration-test phase) -->
+            <phase>verify</phase>
+            <configuration>
+              <formats>
+                <!-- human-readable -->
+                <format>HTML</format>
+                <!-- consumed by SonarQube -->
+                <format>XML</format>
+              </formats>
+            </configuration>
+          </execution>
+
+          <!--
+            Enforces the coverage gate. Fails the build if LINE coverage across the entire project bundle falls
+            below 80%.
+            haltOnFailure = true is the default but stated explicitly so CI intent is self-documenting.
+          -->
+          <execution>
+            <id>jacoco-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <!-- after jacoco-report due to execution order -->
+            <phase>verify</phase>
+            <configuration>
+              <haltOnFailure>true</haltOnFailure>
+              <rules>
+                <rule>
+                  <!-- BUNDLE: measures coverage across the whole project as one unit. -->
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${jacoco-code-coverage.minimum}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Analyzes the source code locally and sends the analysis report to SonarQube server or SonarQubeCloud for
+        further processing, reporting and visualization.
+      -->
+      <plugin>
+        <groupId>org.sonarsource.scanner.maven</groupId>
+        <artifactId>sonar-maven-plugin</artifactId>
+        <version>${sonar-scanner-plugin.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <distributionManagement>
+    <!-- SNAPSHOT → GitHub Packages (staging) -->
+    <snapshotRepository>
+      <id>github</id>
+      <url>${github-snapshot-repo.url}</url>
+    </snapshotRepository>
+    <!-- Release → handled entirely by central-publishing-maven-plugin below -->
+  </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+
+          <!-- Signs artifacts with GPG for Maven Central deployment verification. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven-gpg-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <gpgArguments>
+                    <!--
+                      The loopback pinentry mode allows the passphrase to be passed non-interactively via the
+                      MAVEN_GPG_PASSPHRASE environment variable — essential for CI where there's no interactive terminal
+                      to type a passphrase into.
+                    -->
+                    <!-- equivalent to passing: pinentry-mode=loopback to gpg -->
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Publishes artifacts to Maven Central via the new Sonatype Portal bundle upload and validation system. -->
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>${central-publishing-maven-plugin.version}</version>
+            <!--
+              Tell Maven to load this plugin as a build extension. A regular plugin adds goals you invoke explicitly.
+              An extension goes deeper — it can replace Maven's core lifecycle bindings. In this case,
+              central-publishing-maven-plugin uses this to take over the deploy phase entirely, replacing Maven's
+              default deploy behavior with its own bundle-upload-and-validate flow to Central Portal.
+              Without this the plugin would be ignored during mvn deploy — it would just sit there as an unused plugin
+              declaration.
+            -->
+            <extensions>true</extensions>
+            <configuration>
+              <!--
+                An identifier that must match the server-id configured in the 'Setup JDK 21' workflow step in
+                cd-publish-release-artifact.yml
+              -->
+              <publishingServerId>central</publishingServerId>
+              <!--
+                Skips the manual "release" step in the Central Portal UI — once validation passes, it publishes
+                automatically without requiring you to click anything on the portal.
+              -->
+              <autoPublish>true</autoPublish>
+              <!-- Blocks until Central Portal fully validates and publishes the bundle, not just uploads it. -->
+              <waitUntil>published</waitUntil>
+            </configuration>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

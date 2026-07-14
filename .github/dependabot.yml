@@ -1,0 +1,55 @@
+# Tells GitHub's Dependabot bot how to automatically check for outdated dependencies and raise PRs to update them.
+version: 2
+
+updates:
+
+  # --------------------------------------------------------------------------------------------------------------------
+  # -------------------------------------------------- maven ecosystem -------------------------------------------------
+  # --------------------------------------------------------------------------------------------------------------------
+
+  #  Scans the pom.xml for outdated dependencies and plugin versions.
+  #  For example, when JaCoCo releases a new version, Dependabot opens a PR bumping it automatically.
+  - package-ecosystem: "maven"
+
+    # Tells Dependabot where to look for the pom.xml file relative to the repository root (/pom.xml).
+    directory: "/"
+
+    # Checks once a week, not on every push. Avoids PR noise.
+    schedule:
+      interval: "weekly"
+
+    # Caps how many open Dependabot PRs can exist at once per ecosystem.
+    # Prevents PRs being flooded if many dependencies update simultaneously.
+    open-pull-requests-limit: 5
+
+    # Makes Dependabot's PR titles follow a Conventional Commits format.
+    # For example, (chore: bump junit from x to y).
+    # This is needed because we are enforcing and validating it in the ci-validate-pr-title.yml GitHub Actions workflow.
+    commit-message:
+      prefix: "chore"
+
+  # --------------------------------------------------------------------------------------------------------------------
+  # ------------------------------------------- github-actions ecosystem -----------------------------------------------
+  # --------------------------------------------------------------------------------------------------------------------
+
+  #  Scans the workflow files (.github/workflows/*.yml) for outdated action versions.
+  #  For example, when actions/checkout@v4 gets a new release, Dependabot opens a PR bumping it automatically.
+  - package-ecosystem: "github-actions"
+
+    # Tells Dependabot where to look for the workflow files relative to the repository root (/.github/workflows/).
+    # / is just a conventional value, as GitHub hardcodes this location for the github-actions ecosystem.
+    directory: "/"
+
+    # Checks once a week, not on every push. Avoids PR noise.
+    schedule:
+      interval: "weekly"
+
+    # Caps how many open Dependabot PRs can exist at once per ecosystem.
+    # Prevents PRs being flooded if many dependencies update simultaneously.
+    open-pull-requests-limit: 5
+
+    # Makes Dependabot's PR titles follow a Conventional Commits format.
+    # For example, (chore: bump actions/checkout from x to y).
+    # This is needed because we are enforcing and validating it in the ci-validate-pr-title.yml GitHub Actions workflow.
+    commit-message:
+      prefix: "chore"

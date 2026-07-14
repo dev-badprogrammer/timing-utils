@@ -1,0 +1,109 @@
+# GitHub's built-in static security analysis engine.
+
+# Unlike Checkstyle (style) or SonarQube (quality + some security), CodeQL models actual data flows through our code
+# to find security vulnerabilities — SQL injection paths, null dereferences from untrusted input, resource leaks, and
+# similar patterns.
+
+# Note: This job should be added as a required check under "Require status checks to pass" in the branch protection
+# rule for main, preventing PR merges until the CodeQL scan completes.
+# This enforces security scanning on every PR, once real Java source code exists for CodeQL to analyze.
+
+# Workflow name — user defined - can be any descriptive name.
+name: CodeQL
+
+# Runs on every push to main and PRs targeting main (same as ci-build-and-test.yml), plus a weekly schedule
+# every Monday at 6am UTC.
+# The schedule is important — new CVE patterns are discovered continuously. Code that was safe last month might match a
+# newly disclosed vulnerability pattern next month. The weekly run catches this even when no code changes.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  schedule:
+
+    # Every Monday at 6:00 AM UTC - catches newly disclosed CVEs.
+    - cron: '0 6 * * 1'
+
+jobs:
+
+  # Job ID - user defined — can be any descriptive name.
+  codeql-security-scan:
+    name: CodeQL Security Scan
+    runs-on: ubuntu-latest
+
+    # Explicit permissions required.
+    permissions:
+
+      # Allows the workflow to publish the findings to GitHub's Security tab for vulnerability reporting.
+      security-events: write
+
+      # Allows the workflow to read workflow run metadata, which helps CodeQL for incremental analysis optimization.
+      actions: read
+
+      # Allows the workflow to read repository source code, configuration files, etc. for analysis.
+      contents: read
+
+    steps:
+
+      # Step-1 - Checkout the repository.
+      - name: Checkout Repository
+
+        # Use actions/checkout GitHub Action to clone the repository into the runner workspace (GITHUB_WORKSPACE).
+        uses: actions/checkout@v7
+
+      # Step-2 - Check for Java source files.
+      - name: Check For Java Source Files
+        id: check-java
+
+        # CodeQL fails ("no source code seen during the build") if the repository has no Java source files.
+        # Check for .java files and store the result in GITHUB_OUTPUT as has_java_code, so later steps can skip the
+        # CodeQL init/build/analyze steps when there's nothing to scan yet.
+        run: |
+          if [ -d src ] && find src -name "*.java" -type f | grep -q .; then
+            echo "has_java_code=true" >> $GITHUB_OUTPUT
+            echo "🟢 Java source code found. Proceeding with the next step (Setup JDK 21)."
+          else
+            echo "has_java_code=false" >> $GITHUB_OUTPUT
+            echo "🔴 No Java source code found. Skipping subsequent steps."
+          fi        
+
+      # Step-3 - Setup JDK.
+      - name: Setup JDK 21
+        if: steps.check-java.outputs.has_java_code == 'true'
+
+        # Use actions/setup-java GitHub Action to install and configure the specified JDK in the runner.
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+          # Cache the maven dependencies (from the ~/.m2/repository directory) in the runner.
+          cache: maven
+
+      # Step-4 - Initialize CodeQL.
+      - name: Initialize CodeQL
+        if: steps.check-java.outputs.has_java_code == 'true'
+
+        # Use codeql-action/init GitHub Action to initialize CodeQL with language extractors and build configuration.
+        uses: github/codeql-action/init@v4
+        with:
+
+          # Tells CodeQL which language extractor to use.
+          languages: java
+
+      # Step-5 - Build code - skip tests.
+      - name: Build Code For CodeQL Analysis
+        if: steps.check-java.outputs.has_java_code == 'true'
+
+        # Compiles the code so CodeQL has bytecode to analyze. Tests are skipped.
+        run: mvn compile -DskipTests
+
+      # Step-6 - Perform CodeQL analysis.
+      - name: Perform CodeQL Analysis
+        if: steps.check-java.outputs.has_java_code == 'true'
+
+        # Use codeql-action/analyze GitHub Action to run the actual analysis, upload the findings to the Security tab.
+        # Any vulnerabilities found appear there but not as a build failure — CodeQL findings are advisory by default.
+        uses: github/codeql-action/analyze@v4
