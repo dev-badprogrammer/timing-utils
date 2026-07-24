@@ -20,7 +20,7 @@
 - [ ] `mvn clean verify` passes locally (Checkstyle + Tests + Java sources jar + Java docs jar + JaCoCo Coverage ≥ 80%)
 - [ ] SonarQube Cloud analysis run locally against this branch (`-Dsonar.branch.name=<branch>`) and Quality Gate passed
 
-  `mvn clean verify sonar:sonar -Dsonar.token=$SONAR_TOKEN -Dsonar.branch.name=chore/ci-cd-pipeline`
+  `mvn clean verify sonar:sonar -Dsonar.token=$SONAR_TOKEN -Dsonar.branch.name=<your-branch-name>`
 
 - [ ] PR title follows Conventional Commits format
 - [ ] Linked issue referenced in the commit message (e.g. `(#10)`), so it carries through to the auto-populated PR title

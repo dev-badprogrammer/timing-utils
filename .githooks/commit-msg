@@ -21,12 +21,13 @@ if [ "$subject_length" -gt 70 ]; then
   exit 1
 fi
 
-pattern="^(feat|fix|chore|docs|test|refactor|perf|ci|build|revert)(\([a-z0-9_-]+\))?: [^ ].*"
+pattern="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|test)(\([a-z0-9_-]+\))?: [^ A-Z].*"
 
 if ! echo "$subject_line" | grep -qE "$pattern"; then
   echo "🔴 Commit rejected: subject line must follow Conventional Commits format"
-  echo "Expected: <type>: <description>  (e.g. chore: added commit subject line length and format enforcement)"
-  echo "Valid types: build, chore, ci, docs, feat, fix, perf, refactor, revert, test"
+  echo "     Expected:    <type>: <description> (e.g. \"chore: add commit subject line length and format enforcement\")"
+  echo "     Valid types: build, chore, ci, docs, feat, fix, perf, refactor, revert, test"
+  echo "     Note:        description must start with a lowercase letter (e.g. \"add\", not \"Add\")"
   exit 1
 fi
 

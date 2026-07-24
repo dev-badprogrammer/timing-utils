@@ -10,7 +10,7 @@
 
   <name>timing-utils</name>
   <description>
-    A focused, light weight, minimal-external-dependency Java library for measuring method execution time for deliberate
+    A focused, lightweight, minimal-external-dependency Java library for measuring method execution time for deliberate
     performance investigations and permanent production logging.
   </description>
   <url>https://github.com/dev-badprogrammer/timing-utils</url>
@@ -45,6 +45,11 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
 
+    <slf4j-api.version>2.0.18</slf4j-api.version>
+    <logback-classic.version>1.5.38</logback-classic.version>
+    <junit-jupiter.version>6.1.2</junit-jupiter.version>
+    <mockito-core.version>5.23.0</mockito-core.version>
+
     <checkstyle.version>13.8.0</checkstyle.version>
     <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
     <checkstyle.config.location>src/main/resources/checkstyle.xml</checkstyle.config.location>
@@ -68,10 +73,38 @@
     <github-snapshot-repo.url>https://maven.pkg.github.com/dev-badprogrammer/timing-utils</github-snapshot-repo.url>
   </properties>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j-api.version}</version>
+    </dependency>
+
+    <!-- Required only for tests and examples. Not part of the library and will not be included in the final jar. -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback-classic.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito-core.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
   <build>
     <plugins>
 
-      <!-- Ensures code quality by enforcing coding standards and detecting style violations. -->
+      <!-- Ensures code quality by detecting style violations and enforcing coding standards. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
@@ -99,9 +132,10 @@
               <goal>check</goal>
             </goals>
             <!--
-              check goal defaults to verify, but we explicitly bind it to validate which runs before the compile phase.
-              We don't want to wait till the compilation completes to catch a style issue. This is a common fail-fast
-              pattern and a reasonable trade-off to get faster feedback.
+              Bound to 'validate' intentionally — default is 'verify', this is a deliberate override.
+              - Runs BEFORE compile: style violations fail fast, no waiting for compilation
+              - Trade-off: syntactically invalid files may show Checkstyle parse errors instead of javac errors
+              - Acceptable: IntelliJ catches syntax errors in real time before mvn is ever invoked
             -->
             <phase>validate</phase>
           </execution>
@@ -211,8 +245,8 @@
       </plugin>
 
       <!--
-        Analyzes the source code locally and sends the analysis report to SonarQube server or SonarQubeCloud for
-        further processing, reporting and visualization.
+        Analyzes the source code locally and sends the analysis report to SonarQube Cloud for further processing,
+        reporting and visualization.
       -->
       <plugin>
         <groupId>org.sonarsource.scanner.maven</groupId>
@@ -253,7 +287,7 @@
                   <gpgArguments>
                     <!--
                       The loopback pinentry mode allows the passphrase to be passed non-interactively via the
-                      MAVEN_GPG_PASSPHRASE environment variable — essential for CI where there's no interactive terminal
+                      MAVEN_GPG_PASSPHRASE environment variable - essential for CI where there's no interactive terminal
                       to type a passphrase into.
                     -->
                     <!-- equivalent to passing: pinentry-mode=loopback to gpg -->
