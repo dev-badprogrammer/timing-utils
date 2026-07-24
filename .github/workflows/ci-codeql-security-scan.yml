@@ -67,7 +67,7 @@ jobs:
           else
             echo "has_java_code=false" >> $GITHUB_OUTPUT
             echo "🔴 No Java source code found. Skipping subsequent steps."
-          fi        
+          fi
 
       # Step-3 - Setup JDK.
       - name: Setup JDK 21
@@ -92,6 +92,9 @@ jobs:
 
           # Tells CodeQL which language extractor to use.
           languages: java
+
+          # Explicitly declares that we build ourselves (see the build step below) — CodeQL does not build the code.
+          build-mode: manual
 
       # Step-5 - Build code - skip tests.
       - name: Build Code For CodeQL Analysis

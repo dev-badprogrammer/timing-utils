@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report incorrect behavior, unexpected output, or exceptions in timing-utils
+about: Report incorrect behavior, unexpected output, or exceptions in the timing-utils library
 title: 'bug: '
 labels: bug
 assignees: kumar-github
