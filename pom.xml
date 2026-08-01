@@ -45,6 +45,12 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
 
+    <!-- dependency versions -->
+    <slf4j-api.version>2.0.18</slf4j-api.version>
+    <logback-classic.version>1.5.38</logback-classic.version>
+    <junit-jupiter.version>6.1.2</junit-jupiter.version>
+    <mockito-core.version>5.23.0</mockito-core.version>
+
     <!-- plugin versions -->
     <checkstyle.version>13.9.0</checkstyle.version>
     <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
@@ -68,6 +74,34 @@
 
     <github-snapshot-repo.url>https://maven.pkg.github.com/dev-badprogrammer/timing-utils</github-snapshot-repo.url>
   </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j-api.version}</version>
+    </dependency>
+
+    <!-- Required only for tests and examples. Not part of the library and will not be included in the final jar. -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback-classic.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito-core.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
