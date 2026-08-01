@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Validates a commit's subject line before it's accepted. Three things are checked, in order:
+# 1. Length — must be 70 characters or fewer
+# 2. Format — Conventional Commits (<type>: <description>), from a fixed list of valid types, lowercase description
+# 3. Issue reference — must end with (#<issue-number>)
+#
+# Auto-generated merge commits are exempt from all checks. See the rejection messages below for the exact rule that
+# failed on any given commit.
+#
+# Example of a valid commit message satisfying every rule above:
+# chore: add commit subject line length and format enforcement (#6)
+#
+# Examples of invalid commit messages, and which rule each one fails:
+# chore: implement core library with all the required features and write tests for each feature (#6)
+#                             — subject line is more than 70 characters
+# quick fix (#6)              — type is missing
+# wip: quick fix (#6)         — "wip" is not a valid type
+# chore: Add commit hook (#6) — description must start lowercase ("Add" -> "add")
+# chore: add commit hook      — missing the issue reference at the end (#6)
+
+# Path to the temporary file containing the commit message
+commit_message_file=$1
+
+# Extract the very first line (the subject line/title)
+subject_line=$(head -1 "$commit_message_file")
+
+# Skip validation for auto-generated merge commits from `git merge`, `git pull` or GitHub's "Update branch" button.
+# These aren't hand-written commits and don't follow Conventional Commits format by design.
+case "$subject_line" in "Merge "*)
+  printf "→ Merge commit detected — skipping subject line validation\n"
+  exit 0
+  ;;
+esac
+
+subject_length=${#subject_line}
+
+if [ "$subject_length" -gt 70 ]; then
+  # No trailing \n here — lets the next line continue on the same output line
+  printf "✗ Commit rejected: subject line must be 70 characters or fewer "
+  # "%s" here — this line embeds computed numeric values, not fixed static text
+  printf "%s\n" "(currently $subject_length, excess: $((subject_length - 70)))"
+  exit 1
+fi
+
+pattern="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|test)(\([a-z0-9_-]+\))?: [^ A-Z].*"
+
+# "%s" here — $subject_line is arbitrary, user-written text that could contain a literal %
+if ! printf "%s\n" "$subject_line" | grep -qE "$pattern"; then
+  printf "✗ Commit rejected: subject line must follow Conventional Commits format\n"
+  printf "    Expected:    <type>: <description> (#<issue-number>)\n"
+  printf "    Example:     \"chore: add commit subject line length and format enforcement (#6)\"\n"
+  printf "    Valid types: build, chore, ci, docs, feat, fix, perf, refactor, revert, test\n"
+  printf "    Note:        description must start with a lowercase letter (e.g. \"add\", not \"Add\")\n"
+  exit 1
+fi
+
+if ! printf "%s\n" "$subject_line" | grep -qE " \(#[0-9]+\)$"; then
+  printf "✗ Commit rejected: subject line must end with an issue reference\n"
+  printf "    Expected: <type>: <description> (#<issue-number>)\n"
+  printf "    Example:  \"chore: add commit subject line length and format enforcement (#6)\"\n"
+  exit 1
+fi
+
+# IntelliJ IDEA does not show this but terminal does
+printf "✓ Commit accepted: subject line follows Conventional Commits format\n"
