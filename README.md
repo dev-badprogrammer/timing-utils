@@ -171,6 +171,7 @@ Measure a method once and return the result:
 ```java
 // One-off measurement during an investigation
 final TimedResult<User> timedResult   = StopWatch.measure(() -> userService.getUserById(101));
+
 final User              result        = timedResult.getResult();
 final long              elapsedMillis = timedResult.getElapsedMillis();
 
@@ -283,6 +284,7 @@ A method that returns **`void` without declaring** any checked exceptions:
 ```java
 // Returns void, no checked exception
 final TimedResult<Void> timedResult   = StopWatch.measure(() -> eventPublisher.publishEvent());
+
 final Void              result        = timedResult.getResult();
 final long              elapsedMillis = timedResult.getElapsedMillis();
 
@@ -304,6 +306,7 @@ A method that returns a **value without declaring** any checked exceptions:
 ```java
 // Returns a value, no checked exception
 final TimedResult<User> timedResult   = StopWatch.measure(() -> userService.getUserById(101));
+
 final User              result        = timedResult.getResult();
 final long              elapsedMillis = timedResult.getElapsedMillis();
 
@@ -325,6 +328,7 @@ A method that returns **`void` and declares** a checked exception:
 ```java
 // Return void, declares a checked exception
 final TimedResult<Void> timedResult   = StopWatch.measureChecked(() -> dbUtils.closeConnection());
+
 final Void              result        = timedResult.getResult();
 final long              elapsedMillis = timedResult.getElapsedMillis();
 
@@ -346,6 +350,7 @@ A method that returns a **value and declares** a checked exception:
 ```java
 // Returns a value, declares a checked exception
 final TimedResult<Connection> timedResult   = StopWatch.measureChecked(() -> dbUtils.getConnection());
+
 final Connection              result        = timedResult.getResult();
 final long                    elapsedMillis = timedResult.getElapsedMillis();
 
@@ -1018,27 +1023,29 @@ been discussed or being discussed, but not yet promised.
 
 ### ✓ Implemented
 
-✓ **Single measurement** — `measure`, `measureChecked`
+✓ **Single measurement** — `measure`, `measureChecked` (`StopWatch`)
 
-✓ **Repeated measurement** — `measureRepeatedly`, `measureRepeatedlyChecked`
+✓ **Repeated measurement** — `measureRepeatedly`, `measureRepeatedlyChecked` (`StopWatch`)
 
-✓ **Failure tracking** — `hasFailures()`, `getLastException()`
+✓ **Failure tracking** — `hasFailures()`, `getLastException()` (`TimingStatistics`)
 
-✓ **Ambient production timing** — `TimingLogger`
+✓ **Ambient production timing** — `start()` (`TimingLogger`)
 
 ### ○ Roadmap
 
 Committed next steps:
 
-① **Global default slow threshold for `TimingLogger`** — `TimingLogger.setDefaultSlowThreshold(millis)` configures a
-shared threshold once; `startWithDefaultThreshold(label, logger)` opts a call site into it explicitly. The existing
-`start(label, logger)` overload is unaffected — slow-call detection stays opt-in at every call site, with no
-exceptions.
+① **`toFormattedString()` on `TimedResult` / `TimingStatistics`** — a multi-line, table-structured rendering for
+console/investigation use, separate from the existing compact `toString()`, which stays unchanged for log-line safety.
 
 ② **Head-to-head comparison** — `compare` / `compareChecked` methods that accept paired `Candidate` (label and method)
 inputs and return a `ComparisonResult`.
 
 ③ **Percentile statistics** — `getPercentileMillis()` for P50 / P75 / P95 / P99 on `TimingStatistics`.
+
+④ **Global default slow threshold for `TimingLogger`** — `TimingLogger.setDefaultSlowThreshold(millis)` configures a
+shared threshold once; `startWithDefaultThreshold(label, logger)` opts a call site into it explicitly. The existing
+`start(label, logger)` overload is unaffected — slow-call detection stays opt-in at every call site, with no exceptions.
 
 ### □ Future Considerations
 
@@ -1046,19 +1053,19 @@ Ideas raised during design discussions but not yet committed to. Some may be imp
 library matures:
 
 □ **`toMap()` on `ComparisonResult`** — a flat `Map<String, Object>` representation for external consumption (metrics
-platforms, structured logging, MDC) without coupling the library to a JSON dependency
+platforms, structured logging, MDC) without coupling the library to a JSON dependency.
 
 □ **MDC integration for `TimingLogger`** — attaching elapsed time to the logging context rather than (or in addition to)
-a log line; depends on the consuming application's log-aggregation stack
+a log line; depends on the consuming application's log-aggregation stack.
 
 □ **Spring AOP `@Timed` module** — an optional, separate module providing an annotation-based alternative to
-`TimingLogger` for Spring Boot consumers, without adding a Spring dependency to the core library
+`TimingLogger` for Spring Boot consumers, without adding a Spring dependency to the core library.
 
 □ **Opt-in `TRACE`-level internal logging** — visibility into per-iteration progress during long `measureRepeatedly`
 runs (currently only the final aggregated `TimingStatistics` is observable). Silent by default, matching
 `TimingLogger`'s own **invisible until configured** philosophy. For `StopWatch` specifically, this would require
 resolving a real conflict with its documented **zero-dependency** guarantee — either accepting that trade-off or finding
-a dependency-free mechanism (e.g. a pluggable callback) instead of SLF4J directly
+a dependency-free mechanism (e.g. a pluggable callback) instead of SLF4J directly.
 
 ### ✗ Considered and rejected
 
