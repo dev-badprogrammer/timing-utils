@@ -2,8 +2,8 @@
 
 # Validates a commit's subject line before it's accepted. Three things are checked, in order:
 # 1. Length — must be 70 characters or fewer
-# 2. Format — Conventional Commits (<type>: <description>), from a fixed list of valid types, lowercase description
-# 3. Issue reference — must end with (#<issue-number>)
+# 2. Format — Conventional Commits "<type>: <description>", from a fixed list of valid types, lowercase description
+# 3. Issue reference — must end with "(#<issue-number>)"
 #
 # Auto-generated merge commits are exempt from all checks. See the rejection messages below for the exact rule that
 # failed on any given commit.

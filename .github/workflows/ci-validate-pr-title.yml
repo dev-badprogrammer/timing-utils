@@ -1,7 +1,7 @@
 # Checks that every PR title follows the Conventional Commits format with an allowed type prefix.
 
 # Each PR title is verified against a list of allowed semantic commit types (feat, fix, chore, etc.). This improves
-# readability, enforces consistent formatting, keeps the commit history clean and helps with release automation.
+# readability, enforces consistent formatting, keeps the commit history clean, and helps with release automation.
 
 # Note: This job should be added as a required check under "Require status checks to pass" in the branch protection
 # rule for main, preventing PR merges with titles that don't follow Conventional Commits.

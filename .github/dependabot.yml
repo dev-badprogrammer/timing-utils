@@ -1,4 +1,4 @@
-# Tells GitHub's Dependabot bot how to automatically check for outdated dependencies and raise PRs to update them.
+# Configures Dependabot to automatically scan for outdated dependencies and open PRs to update them.
 version: 2
 
 updates:
@@ -8,7 +8,7 @@ updates:
   # --------------------------------------------------------------------------------------------------------------------
 
   #  Scans the pom.xml for outdated dependencies and plugin versions.
-  #  For example, when JaCoCo releases a new version, Dependabot opens a PR bumping it automatically.
+  #  e.g. when JaCoCo releases a new version, Dependabot opens a PR bumping it automatically.
   - package-ecosystem: "maven"
 
     # Tells Dependabot where to look for the pom.xml file relative to the repository root (/pom.xml).
@@ -33,7 +33,7 @@ updates:
   # --------------------------------------------------------------------------------------------------------------------
 
   #  Scans the workflow files (.github/workflows/*.yml) for outdated action versions.
-  #  For example, when actions/checkout@v4 gets a new release, Dependabot opens a PR bumping it automatically.
+  #  e.g. when actions/checkout@v4 gets a new release, Dependabot opens a PR bumping it automatically.
   - package-ecosystem: "github-actions"
 
     # Tells Dependabot where to look for the workflow files relative to the repository root (/.github/workflows/).
