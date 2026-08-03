@@ -19,13 +19,13 @@ public class TimingLoggerDemo {
 
     public static void main(String[] args) throws Exception {
 
-        separator("SCENARIO 1: void, no checked exception");
+        separator("SCENARIO 1: returns void, no checked exception");
         publishEvent();
 
         separator("SCENARIO 2: returns value, no checked exception");
         getUserById(101);
 
-        separator("SCENARIO 3: void, checked exception");
+        separator("SCENARIO 3: returns void, checked exception");
         closeConnection();
 
         separator("SCENARIO 4: returns value, checked exception");
