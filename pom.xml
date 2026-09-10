@@ -52,7 +52,7 @@
     <mockito-core.version>5.23.0</mockito-core.version>
 
     <!-- plugin versions -->
-    <checkstyle.version>14.0.0</checkstyle.version>
+    <checkstyle.version>14.1.0</checkstyle.version>
     <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
     <checkstyle.config.location>.checkstyle/checkstyle.xml</checkstyle.config.location>
 
