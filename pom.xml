@@ -63,7 +63,7 @@
     <jacoco-plugin.version>0.8.15</jacoco-plugin.version>
     <jacoco-code-coverage.minimum>0.80</jacoco-code-coverage.minimum>
 
-    <sonar-scanner-plugin.version>5.7.0.6970</sonar-scanner-plugin.version>
+    <sonar-scanner-plugin.version>5.8.0.7211</sonar-scanner-plugin.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>dev-badprogrammer</sonar.organization>
     <sonar.projectKey>dev-badprogrammer_timing-utils</sonar.projectKey>
